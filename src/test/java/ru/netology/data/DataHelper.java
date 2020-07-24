@@ -11,6 +11,10 @@ import java.sql.SQLException;
 import java.util.Locale;
 
 public class DataHelper {
+    private final static String url = "jdbc:mysql://localhost:3306/app";
+    private final static String user = "app";
+    private final static String password = "pass";
+
     private DataHelper() {
     }
 
@@ -29,17 +33,17 @@ public class DataHelper {
         String code;
     }
 
-    public static VerificationCode getVerificationCode(AuthInfo authInfo) throws SQLException {
+    public static VerificationCode getVerificationCode(AuthInfo authInfo) {
         val codeSQL = "SELECT auth_codes.code FROM users INNER JOIN auth_codes ON auth_codes.user_id "
                 + "= users.id WHERE users.login = ? ORDER by auth_codes.created DESC LIMIT 1;";
         val runner = new QueryRunner();
-        String code;
-        try (
-                val conn = DriverManager.getConnection(
-                        "jdbc:mysql://localhost:3306/app", "app", "pass"
-                )
-        ) {
-            code = runner.query(conn, codeSQL, new ScalarHandler<>(), authInfo.getLogin());
+        String code = "";
+        try {
+            try (val conn = DriverManager.getConnection(url, user, password)) {
+                code = runner.query(conn, codeSQL, new ScalarHandler<>(), authInfo.getLogin());
+            }
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
         }
         return new VerificationCode(code);
     }
@@ -59,15 +63,16 @@ public class DataHelper {
         );
     }
 
-    public static void ClearAuthCodesTable() throws SQLException {
+    public static void clearAuthCodesTable() {
         val deleteAuthCodeSQL = " DELETE FROM auth_codes;";
         val runner = new QueryRunner();
-        try (
-                val conn = DriverManager.getConnection(
-                        "jdbc:mysql://localhost:3306/app", "app", "pass"
-                )
-        ) {
-            runner.execute(conn, deleteAuthCodeSQL, new ScalarHandler<>());
+        try {
+            try (val conn = DriverManager.getConnection(url, user, password)) {
+                runner.execute(conn, deleteAuthCodeSQL, new ScalarHandler<>());
+            }
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
         }
     }
+
 }
